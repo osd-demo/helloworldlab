@@ -5,4 +5,4 @@ NextPage: setup
 ExitSign: Setup Environment
 ---
 
-Welcome to OpenShift Dedicated Experience self-service lab. You can experience how to run basic OpenShift commands and deploy and Application on an OpenShift Dedicated cluster hosted on AWS.
+Welcome to the OpenShift Dedicated self-service lab. Learn how to run basic OpenShift commands and deploy an application to an OpenShift Dedicated cluster.

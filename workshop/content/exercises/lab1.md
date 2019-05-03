@@ -1,94 +1,121 @@
 ---
-Title: Deploying a simple application on OpenShift Dedicated cluster
+Title: Deploy a simple application
 PrevPage: ../setup
 NextPage: ../finish
 ---
 
-Lets deploy a simple nodejs hello world application on the OpenShift Dedicated cluster.
+This lab will guide you through deploying a Node.js 'Hello World' application to the OpenShift Dedicated cluster.
 
-We start by creating a new application on the cluster. Copy and paste the command below in the terminal. Alternatively, You can click on any command which has the <span class="glyphicon glyphicon-play-circle"></span> icon shown to the right of it, and it will be copied to the interactive terminal and it will run it for you.  
+## Step 1: Create application
+
+The command below will create the application. As a reminder, you can click on the <span class="glyphicon glyphicon-play-circle"></span> icon shown to the right of the command to copy and run the command in the interactive terminal.  
 
 ```execute
-oc new-app registry.access.redhat.com/openshift3/nodejs-010-rhel7~https://github.com/rkratky/nodejs-hello-world.git
+oc new-app https://github.com/rkratky/nodejs-hello-world.git
 ```
 
-You should see text on the termainal that looks something like
+The output should display the below success message:
 
 ```
+...
 --> Success
-    Build scheduled for "nodejs-hello-world"
+    Build scheduled ...
+...
 ```
 
-Check the status of the deployment with the status command
-```execute
-oc status -v
-```
+## Step 2: Verify status
 
-Verify the build status with the command:
+You can verify the build status using the following command:
 
 ```execute
 oc describe build  
 ```
 
-And pod status with:
+You can verify the pod status using:
+
 ```execute
 oc get pods
 ```
+The output should display the build pod and application pod status as 'Running' or 'Completed' depending on whether or not the build has finished. Eventually, the build pod status will be 'Completed' and the application pod status will be 'Running'.
 
-Get pods should show you pods are running and deployment is complete. What is the service we just deployed? Lets take a look at it with:
+## Step 3: View service details
+
+You can view the service details using:
 
 ```execute
 oc describe svc/nodejs-hello-world
 ```
 
-You should see the service running successfully. Okay, now that you know your service is running, lets test the service to make sure it is doing the right thing.
-First, get the IP address for the service using the following command
+The output should display the service details such as: Namespace, IP,
+Port, etc.
+
+## Step 4: Verify service
+
+To verify the service functionality, look up the service IP address using:
 
 ```execute
 oc describe svc/nodejs-hello-world | grep IP
 ```
 
-Next, Use curl on the IP address to see if the Hello World application works:
+Copy and paste the below curl command in the terminal window. Replace 'IP' with the service IP address from the previous step.
 
-```execute
+```
 curl <IP>:8080
 ```
 
-You should see "Hello World" on the terminal.
-But this service is only accessible to you. You may need customers and users to access it. To do this we expose the service as follows:
+You should see "Hello World" in the terminal.
+
+## Step 5: Expose service
+
+You can expose the service so that external users can access it using:
 
 ```execute
 oc expose svc/nodejs-hello-world
 ```
 
-Get the route for the service with:
+Next, get the route for the service:
 
 ```execute
 oc get route
 ```
 
-Your customers can now access your service over the internet using the route which looks something like nodejs-hello-world-portal-workshop-XXXX.XXXX.bu-demo.openshiftapps.com. Copy the route and open into a web browser window.
+The output should display the route like below.
 
-You should see "Hello World" in the browser.
+```
+nodejs-hello-world-portal-workshop-XXXX.XXXX.bu-demo.openshiftapps.com.
+```
 
-Next, Your application gets really popular with the users and customers and there is a lot of demand for it so you would like to scale the application deployment to meet the demands. Here is how you can do it:
+Copy and paste the route in a web browser. The browser should display "Hello World".
+
+## Step 6: Scale application
+
+To scale the application to three pods, run:
 
 ```execute
 oc scale dc nodejs-hello-world --replicas=3
 ```
-Check status of the pods
+
+You can verify the status of the pods using:
 
 ```execute
 oc get pods
 ```
 
-Also check if the Serivce is still available to the customers on the web browser with the route you used earlier.
+Verify that the service is running by accessing the route from Step 6
+in a web browser.
 
-You will notice that the application scales seamlessly without any disruption to the service.  
+## Step 7: Clean up
 
-Congratulations! You have successfully deployed an Application on Openshift Dedicated.   
+Run the following to clean up: 
+
+```execute
+oc delete all --selector app=nodejs-hello-world
+```
+
+You have successfully deployed an application on Red Hat OpenShift Dedicated cluster.   
 
 And yes, it is that easy!!
+
 
 
 ...
