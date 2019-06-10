@@ -1,10 +1,10 @@
 ---
-Title: Deploy a simple application
-PrevPage: ../setup
-NextPage: lab2
+Title: Deploy Storage for a simple application
+PrevPage: lab2
+NextPage: ../finish
 ---
 
-This lab will guide you through deploying a Node.js 'Hello World' application to the OpenShift Dedicated cluster.
+This lab will guide you through deploying Storage for Node.js 'Hello World' application on an OpenShift Dedicated cluster.
 
 ## Step 1: Create application
 
@@ -87,19 +87,68 @@ nodejs-hello-world-portal-workshop-XXXX.XXXX.bu-demo.openshiftapps.com.
 
 Copy and paste the route in a web browser. The browser should display "Hello World".
 
-## Step 6: Scale application
+## Step 6: Deploy storage for the application with the steps below:
 
-To scale the application to three pods, run:
-
-```execute
-oc scale dc nodejs-hello-world --replicas=3
-```
-
-You can verify the status of the pods using:
+Get the deployment config for the application:
 
 ```execute
-oc get pods
+oc get dc
 ```
+
+Changing the config to add the Persistent Volume claim:
+
+```execute
+oc set volume dc/nodejs-hello-world --add --name=tmp-mount --claim-name=data --type pvc --claim-size=1G --mount-path /mnt
+```
+
+You will see the following on the terminal:
+```
+deploymentconfig.apps.openshift.io/nodejs-hello-world volume updated
+```
+
+Rollout the new config:
+
+```execute
+oc rollout status dc/nodejs-hello-world
+```
+
+You will see the following on terminal:
+```
+replication controller "nodejs-hello-world-2" successfully rolled out
+```
+
+You can verify the PVC status using:
+
+```execute
+oc get pvc
+```
+You will see the following on terminal:
+```
+data      Bound     pvc-<>   1Gi        RWO            gp2-encrypted
+```
+
+You can verify the status on the pods using the pod name with the commands below:
+
+* oc get pods
+Get the pod name from the oc get pods output and execute the following in the terminal
+* oc describe pod <nodejs-hello-world-2-XXXX> pod
+
+You will see the following with the describe pod output:
+```
+Displayed:
+———————
+    Mounts:
+      /mnt from tmp-mount (rw)
+
+Volumes:
+  tmp-mount:
+    Type:       PersistentVolumeClaim (a reference to a PersistentVolumeClaim in the same name
+space)
+    ClaimName:  data
+—————————
+
+```
+
 
 Verify that the service is running by accessing the route from Step 6
 in a web browser.
@@ -109,13 +158,10 @@ in a web browser.
 Run the following to clean up:
 
 ```execute
-oc delete all --selector app=nodejs-hello-world
+oc delete all,configmap --selector app=nodejs-hello-world
 ```
 
-You have successfully deployed an application on Red Hat OpenShift Dedicated cluster.   
-
-And yes, it is that easy!!
-
+You have successfully deployed storage with an application on Red Hat OpenShift Dedicated cluster.   
 
 
 ...

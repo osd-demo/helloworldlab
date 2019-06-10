@@ -1,17 +1,17 @@
 ---
-Title: Deploy a simple application
-PrevPage: ../setup
-NextPage: lab2
+Title: Deploy Openshift Dedicated Demo application
+PrevPage: lab1
+NextPage: lab3
 ---
 
-This lab will guide you through deploying a Node.js 'Hello World' application to the OpenShift Dedicated cluster.
+This lab will guide you through deploying openshift-dedicated-demo application to the OpenShift Dedicated cluster.
 
 ## Step 1: Create application
 
 The command below will create the application. As a reminder, you can click on the <span class="glyphicon glyphicon-play-circle"></span> icon shown to the right of the command to copy and run the command in the interactive terminal.  
 
 ```execute
-oc new-app https://github.com/rkratky/nodejs-hello-world.git
+oc new-app https://github.com/openshift-cs/openshift-dedicated-demo.git
 ```
 
 The output should display the below success message:
@@ -43,34 +43,18 @@ The output should display the build pod and application pod status as 'Running' 
 You can view the service details using:
 
 ```execute
-oc describe svc/nodejs-hello-world
+oc describe svc/openshift-dedicated-demo
 ```
 
 The output should display the service details such as: Namespace, IP,
 Port, etc.
 
-## Step 4: Verify service
-
-To verify the service functionality, look up the service IP address using:
-
-```execute
-oc describe svc/nodejs-hello-world | grep IP
-```
-
-Copy and paste the below curl command in the terminal window. Replace 'IP' with the service IP address from the previous step.
-
-```
-curl <IP>:8080
-```
-
-You should see "Hello World" in the terminal.
-
-## Step 5: Expose service
+## Step 4: Expose service
 
 You can expose the service so that external users can access it using:
 
 ```execute
-oc expose svc/nodejs-hello-world
+oc expose svc/openshift-dedicated-demo
 ```
 
 Next, get the route for the service:
@@ -82,34 +66,17 @@ oc get route
 The output should display the route like below.
 
 ```
-nodejs-hello-world-portal-workshop-XXXX.XXXX.bu-demo.openshiftapps.com.
+openshift-dedicated-demo-workshop-XXXX.XXXX.bu-demo.openshiftapps.com
 ```
 
 Copy and paste the route in a web browser. The browser should display "Hello World".
 
-## Step 6: Scale application
-
-To scale the application to three pods, run:
-
-```execute
-oc scale dc nodejs-hello-world --replicas=3
-```
-
-You can verify the status of the pods using:
-
-```execute
-oc get pods
-```
-
-Verify that the service is running by accessing the route from Step 6
-in a web browser.
-
-## Step 7: Clean up
+## Step 5: Clean up
 
 Run the following to clean up:
 
 ```execute
-oc delete all --selector app=nodejs-hello-world
+oc delete all --selector app=openshift-dedicated-demo
 ```
 
 You have successfully deployed an application on Red Hat OpenShift Dedicated cluster.   

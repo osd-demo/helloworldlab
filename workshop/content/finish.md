@@ -1,7 +1,7 @@
 ---
 Sort: 3
 Title: Summary
-PrevPage: exercises/lab1.md
+PrevPage: exercises/lab2
 ExitSign: Finish
 ---
 
