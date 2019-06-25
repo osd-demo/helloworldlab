@@ -81,7 +81,7 @@ oc create -f https://raw.githubusercontent.com/openshift-cs/shifty-demo/master/d
 
 Attach the ConfigMap to the DeploymentConfig as a volume:
 ```execute
-$ oc set volume dc shifty-demo --add \
+oc set volume dc shifty-demo --add \
     --configmap-name=shifty-config \
     -m /var/config
 ```
