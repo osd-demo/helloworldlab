@@ -6,145 +6,96 @@ NextPage: ../finish
 
 This lab will guide you in deploying *Shifty* - An OpenShift Demo application on an OpenShift Dedicated cluster. You can find more details on Shifty at https://github.com/openshift-cs/shifty-demo
 
-## Step 1: Create the environment params needed for the deployment
-
-In the terminal window, create secret from file using   
-Copy and paste the text below into the file, save and close the file.
-
-```
-USERNAME=my_user
-PASSWORD=@OtBl%XAp!#632Y5FwC@MTQk
-SMTP=localhost
-SMTP_PORT=25
-```
-
-Create another file called haproxy.config and copy paste the text below in it.
-```
-global
-  maxconn 50000
-  log /dev/log local0
-  user haproxy
-  group haproxy
-  stats socket /run/haproxy/admin.sock user haproxy group haproxy mode 660 level admin
-  nbproc 2
-  nbthread 4
-  cpu-map auto:1/1-4 0-3
-  ssl-default-bind-ciphers ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256
-  ssl-default-bind-options ssl-min-ver TLSv1.2 no-tls-tickets
-
-frontend www.mysite.com
-  bind 10.0.0.3:80
-  bind 10.0.0.3:443 ssl crt /etc/ssl/certs/mysite.pem
-  http-request redirect scheme https unless { ssl_fc }
-  use_backend api_servers if { path_beg /api/ }
-  default_backend web_servers
-```
-
-Create the secrets object from the file using:  
-```execute
-oc create secret generic shifty-secret --from-file=secret.env
-```
-
-Similarly create configmap from file using:
-```execute
-oc create configmap shifty-config --from-file=haproxy.config
-```
-
-## Step 2: Deploy backend microservice
+## Step 1: Deploy backend microservice
 
 We deploy the microservice first to ensure that the SERVICE environment variables
-will be available from the UI application. Using the `app` label allows us to
-ensure the UI application and microservice
+will be available from the frontend-UI application. Using the `app` label allows us to
+visually link the frontend-UI application and microservice in the Web Console.
 
 ```execute
-oc new-app https://github.com/openshift-cs/shifty-demo
+oc new-app https://github.com/openshift-cs/shifty-demo \
+    --context-dir=microservice \
     --name=shifty-microservice \
     --labels=app=shifty-demo
 ```
 
-Watch the pod creation progress with:
-```execute
-watch oc get pods -l app=shifty-demo
-```
-Once you see the pod creation is complete and running, type *cntrl+c* in the terminal
-to end the watch.
-
-## Step 3: Deploy the frontend UI application
+## Step 2: Deploy the frontend-UI application
 
 ```execute
 oc new-app https://github.com/openshift-cs/shifty-demo \
     --env=MICROSERVICE_NAME=SHIFTY_MICROSERVICE
 ```
 
-Watch the pod creation progress with:
-```execute
-watch oc get pods -l app=shifty-demo
-```
-Once you see the pod creation is complete and running, type *cntrl+c* in the terminal
-to end the watch.
+## Step 3: Update DeploymentConfig strategy to Recreate
 
-## Step 4: Update Deployment to use a "Recreate"
-
-Recreate Deployment strategy helps consistent deployments with persistent volumes
-
+Using a Recreate deployment strategy ensures that Read-Write-Once (RWO) persistent
+volumes can mount successfully to new deployments:
 ```execute
 oc patch dc/shifty-demo -p '{"spec": {"strategy": {"type": "Recreate"}}}'
 ```
 
 You should see the following on the terminal:
 ```
-deploymentconfig "shifty-demo" patched
+deploymentconfig.apps.openshift.io/shifty-demo patched
 ```
 
-Watch the pods progress with:
-```execute
-watch oc get pods -l app=shifty-demo
-```
-Once you see the pod are running, type *cntrl+c* in the terminal to end the watch
+## Step 4: Set a Liveness probe on the DeploymentConfig
 
-
-## Step 5: Set a Liveness probe  
-
-Set a Liveness probe on the Deployment to ensure the pod is restarted if something
-isn't healthy within the application
-
+Setting a Liveness probe on the Deployment ensures the pod is restarted if something
+isn't healthy within the application:
 ```execute
 oc set probe dc/shifty-demo --liveness --get-url=http://:8080/health
 ```
 
 You should see the following on the terminal:
 ```
-deploymentconfig "shifty-demo" updated
+deploymentconfig.apps.openshift.io/shifty-demo probes updated
 ```
 
-Watch the pods progress with:
+## Step 5: Create and attach the Secret object to the DeploymentConfig
+
+Create a test Secret object, based on https://github.com/openshift-cs/shifty-demo/blob/master/deployment/examples/secret.env:  
 ```execute
-watch oc get pods -l app=shifty-demo
+oc create -f https://raw.githubusercontent.com/openshift-cs/shifty-demo/master/deployment/yaml/secret.yaml
 ```
-Once you see the pod are running, type *cntrl+c* in the terminal to end the watch
 
-## Step 6: Attach the secrets object to the deployment
-
+Attach the Secret to the DeploymentConfig as a volume:
 ```execute
 oc set volume deploymentconfig shifty-demo --add \
     --secret-name=shifty-secret \
     --mount-path=/var/secret
 ```
 
+You should see the following in the terminal:
+```
+info: Generated volume name: volume-XXXXX
+deploymentconfig.apps.openshift.io/shifty-demo volume updated
+```
+
+## Step 6: Create and attach the ConfigMap object to the DeploymentConfig
+
+Create a test ConfigMap object, based on hhttps://github.com/openshift-cs/shifty-demo/blob/master/deployment/examples/haproxy.config:
+```execute
+oc create -f https://raw.githubusercontent.com/openshift-cs/shifty-demo/master/deployment/yaml/configmap.yaml
+```
+
+Attach the ConfigMap to the DeploymentConfig as a volume:
+```execute
+$ oc set volume dc shifty-demo --add \
+    --configmap-name=shifty-config \
+    -m /var/config
+```
+
 You should see the following on the terminal:
 ```
 info: Generated volume name: volume-XXXXX
-deploymentconfig "shifty-demo" updated
+deploymentconfig.apps.openshift.io/shifty-demo volume updated
 ```
 
-Watch the pods progress with:
-```execute
-watch oc get pods -l app=shifty-demo
-```
-Once you see the pod are running, type *cntrl+c* in the terminal to end the watch
+## Step 7: Create and attach PersistentVolume object to the DeploymentConfig
 
-## Step 7: Create and attach PersistentVolume
-
+Create a 1Gi PersistentVolumeClaim and attach it to the DeploymentConfig
+all at once:
 ```execute
 oc set volume dc shifty-demo --add \
     --type=pvc \
@@ -155,63 +106,60 @@ oc set volume dc shifty-demo --add \
 You should see the following on the terminal:
 ```
 info: Generated volume name: volume-XXXXX
-persistentvolumeclaims/pvc-XXXXX
-deploymentconfig "shifty-demo" updated
+deploymentconfig.apps.openshift.io/shifty-demo volume updated
 ```
-
-Watch the pods progress with:
-```execute
-watch oc get pods -l app=shifty-demo
-```
-Once you see the pod are running, type *cntrl+c* in the terminal to end the watch
 
 ## Step 8: Expose the service
 
-Expose the UI application as an OpenShift Route. Using OpenShift Dedicated's included
-TLS wildcard certicates, we can easily deploy this as an HTTPS application
-
+Expose the frontend-UI application as an OpenShift Route. Using OpenShift Dedicated's included
+TLS wildcard certicates, we can easily deploy this as an HTTPS application:
 ```execute
 oc create route edge --service=shifty-demo --insecure-policy=Redirect
 ```
 
-Get the route with:
-
-The output should display the route .
-
-```
-shifty-demo-wgordon-XXXX.XXXX.bu-demo.openshiftapps.com
+View the created route URL with:
+```execute
+oc get route shifty-demo -o template --template='https://{{.spec.host}}'
 ```
 
-Copy and paste the route in a web browser to access the app
+The output should look similar to
+```
+https://shifty-demo-XXXX-XXXX.993f.bu-demo.openshiftapps.com
+```
 
-## Step 9: Scale application and view Networking section in the application UI
+Copy and paste the route in a web browser to access the app.
 
-To scale the application to three pods, run:
+## Step 9: Scale microservice and watch how it affects the frontend-UI
 
+From the "Networking" tab in the frontend-UI application, you should see 1
+microservice pod currently registered with the frontend.
+
+Scale the microservice to three pods and watch them automatically registry to the frontend:
 ```execute
 oc scale dc shifty-microservice --replicas=3
 ```
 
-You can verify the status of the pods using:
-
-```execute
-oc get pods
-```
-
-You should see 3 pods in the "Intra-cluster Communication" section showing traffic flow
+You should see now see 3  microservice pods in the "Intra-cluster Communication" section showing traffic flow
 between the pods.
 
 ## Step 10: Clean up
 
-Run the following to clean up:
-
+Clean up your environment:
 ```execute
-oc delete all,configmap --selector app=shifty-demo
+oc delete all --selector app=shifty-demo; \
+  oc delete configmap shifty-config; \
+  oc delete secret shifty-secret; \
+  oc delete pvc --all
 ```
 
-You have successfully deployed an application on Red Hat OpenShift Dedicated cluster.   
+Congratulations, you have successfully
 
-And yes, it is that easy!!
+- Deployed a backend microservice
+- Deployed an application
+- Hardened the application against unknown issues with a Liveness probe
+- Added Secrets and ConfigMaps intended to store private information or configuration overrides
+- Added persistent storage to ensure data persists restarts
+- Created a TLS secured Route
+- Flawlessly and horizontally scaled your backend microservice
 
-
-...
+Yes, it really is that easy on Red Hat OpenShift Dedicated!!
