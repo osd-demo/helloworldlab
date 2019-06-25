@@ -8,7 +8,7 @@ This lab will guide you in deploying *Shifty* - An OpenShift Demo application on
 
 ## Step 1: Create the environment params needed for the deployment
 
-In the terminal window, create a file called secret.env  
+In the terminal window, create secret from file using   
 Copy and paste the text below into the file, save and close the file.
 
 ```
