@@ -2,7 +2,7 @@
 Sort: 2
 Title: Lab Setup
 PrevPage: index
-NextPage: exercises/lab1.md
+NextPage: exercises/lab2.md
 ExitSign: Start Workshop
 ---
 
